@@ -1,1 +1,1 @@
-*/2 * * * *  /usr/local/sbin/supermon/wx-info.sh >/dev/null 2>&1
+*/3 * * * *  /usr/local/sbin/supermon/wx-info.sh >/dev/null 2>&1

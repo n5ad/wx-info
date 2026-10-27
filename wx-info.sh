@@ -1,28 +1,9 @@
 #!/bin/bash
 #
-# ast_node_status_update.sh
-#
-# Updates AllstarLink node variables on the local server using the
-# `rpt set variable` Asterisk command: uptime, CPU load, CPU temperature,
-# weather, log disk usage, and AutoSky/SkywarnPlus alerts.
-#
-# Reads node_info.ini from the same directory as this script.
-#
-# Usage:
-#   chmod +x ast_node_status_update.sh
-#   ./ast_node_status_update.sh
-#
-# node_info.ini example:
-#   [general]
-#   NODE = node_number(s)
-#   WX_CODE = zip/airport
-#   WX_LOCATION = City, State
-#   TEMP_UNIT = F
-#
-#   [autosky]
-#   MASTER_ENABLE = yes
-#   ALERT_INI = /usr/local/bin/AUTOSKY/AutoSky.ini
-#   WARNINGS_FILE = /var/www/html/AUTOSKY/warnings.txt
+# wx-info.sh
+# created by N5AD, October 2026
+# inspired by previous versions that I have seen but do not know who to credit
+
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/node_info.ini"
 ASTERISK=/usr/sbin/asterisk

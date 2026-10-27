@@ -2,12 +2,12 @@
 #
 # wx-info.sh
 # created by N5AD, October 2026
-# inspired by previous versions that I have seen but do not know who to credit
+# inspired by previous styles that I have seen but do not know who to credit
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/node_info.ini"
+CONFIG_FILE="$SCRIPT_DIR/wx-info.ini"
 ASTERISK=/usr/sbin/asterisk
-# ---------------------------------------------------------------- ini reader
+
 # ini_get FILE SECTION KEY DEFAULT
 ini_get() {
     local val
@@ -30,7 +30,7 @@ ini_get() {
         }' "$1")
     if [ -n "$val" ]; then printf '%s' "$val"; else printf '%s' "$4"; fi
 }
-# ------------------------------------------------------------------ getters
+
 
 get_last_update() {  # get_last_update FORMAT
     local fmt="${1:-%a %b %d %Y %I:%M %p %Z}"
@@ -89,12 +89,12 @@ get_autosky_alerts() {  # get_autosky_alerts ALERT_INI WARNINGS_FILE MASTER_ENAB
             "$enabled" "$a_start" "$content" "$a_end"
     fi
 }
-# ------------------------------------------------------------------ updater
-update_node_variables() {  # node up load temp wx logs alert time
-    local node="$1" cpu_up="$2" cpu_load="$3" cpu_temp="$4" wx="$5" logs="$6" alert="$7" time_val="$8"
+
+update_node_variables() {  # node wx alert time
+    local node="$1" wx="$2" alert="$3" time_val="$4"
     local out
     if grep -q "[[:blank:]]*\[$node\]" /etc/asterisk/rpt.conf 2>/dev/null; then
-        if out=$("$ASTERISK" -rx "rpt set variable $node  WX=$wx LASTUPDATE=$time_val" 2>&1); then
+        if out=$("$ASTERISK" -rx "rpt set variable $node WX=$wx LASTUPDATE=$time_val" 2>&1); then
             echo "Updated Variables Node $node using rpt set variable"
         else
             echo "Error setting variables for node $node: $out"
@@ -108,7 +108,7 @@ update_node_variables() {  # node up load temp wx logs alert time
         echo "Invalid Node $node this server"
     fi
 }
-# --------------------------------------------------------------------- main
+
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Configuration file '$CONFIG_FILE' not found."
     exit 1

@@ -1,4 +1,7 @@
 <?php
+// Copyright (c) 2020 WA3DSP (Doug Crompton)
+// Copyright (c) 2025 W5GLE (Jory A. Pratt)
+// Copyright (c) 2026 N5AD
 // New features, IRLP capability, Paul Aidukas KN2R (Copyright) July 15, 2013-2017
 // For ham radio use only, NOT for comercial use!
 

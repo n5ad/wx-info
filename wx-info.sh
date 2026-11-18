@@ -137,29 +137,81 @@ get_autosky_alerts() {  # get_autosky_alerts ALERT_INI WARNINGS_FILE MASTER_ENAB
     fi
 }
 
+# Asterisk -rx uses netconsole inbuf[512] and prefixes "cli quit after " + NUL.
+AST_RX_MAX_CMD=$((512 - 15 - 1))
+
+# True when cmd fits in a single Asterisk -rx netconsole write.
+rx_cmd_fits() {
+    [ "${#1}" -le "$AST_RX_MAX_CMD" ]
+}
+
+# Truncate a quoted rpt value so "rpt set variable NODE KEY=<value>" fits -rx.
+fit_rx_value() {
+    local prefix="$1" value="$2"
+    local max=$((AST_RX_MAX_CMD - ${#prefix}))
+
+    if [ "$max" -lt 2 ]; then
+        return 1
+    fi
+    if [ "${#value}" -le "$max" ]; then
+        printf '%s' "$value"
+        return 0
+    fi
+    if [ "${value:0:1}" = '"' ]; then
+        printf '%s"' "${value:0:$((max - 1))}"
+    else
+        printf '%s' "${value:0:$max}"
+    fi
+}
+
+# set_node_var NODE KEY=VALUE LABEL
+# Sends one rpt set variable assignment via -rx. Returns 1 on failure / oversize.
+set_node_var() {
+    local node="$1" assignment="$2" label="$3"
+    local cmd="rpt set variable $node $assignment"
+    local out key value fitted prefix
+
+    if ! rx_cmd_fits "$cmd"; then
+        key="${assignment%%=*}"
+        value="${assignment#*=}"
+        prefix="rpt set variable $node ${key}="
+        if ! fitted=$(fit_rx_value "$prefix" "$value"); then
+            echo "Error: $label for node $node exceeds Asterisk -rx ${AST_RX_MAX_CMD}-byte limit" >&2
+            return 1
+        fi
+        if [ "$fitted" = "$value" ]; then
+            echo "Error: $label for node $node exceeds Asterisk -rx ${AST_RX_MAX_CMD}-byte limit" >&2
+            return 1
+        fi
+        echo "Warning: truncated $label for node $node to fit Asterisk -rx limit" >&2
+        cmd="rpt set variable $node ${key}=${fitted}"
+        if ! rx_cmd_fits "$cmd"; then
+            echo "Error: $label for node $node still exceeds Asterisk -rx limit after truncate" >&2
+            return 1
+        fi
+    fi
+
+    if out=$("$ASTERISK" -rx "$cmd" 2>&1); then
+        echo "Updated $label Node $node using rpt set variable"
+        return 0
+    fi
+    echo "Error setting $label for node $node: $out"
+    return 1
+}
+
 update_node_variables() {  # node wx alert time
     local node="$1" wx="$2" alert="$3" time_val="$4"
-    local out status=0
+    local status=0
 
     if ! grep -q "[[:blank:]]*\[$node\]" /etc/asterisk/rpt.conf 2>/dev/null; then
         echo "Invalid Node $node this server"
         return 1
     fi
 
-    # Separate -rx calls: combined WX+ALERT+LASTUPDATE can exceed Asterisk's 512-byte
-    # netconsole buffer once "cli quit after " is prefixed.
-    if out=$("$ASTERISK" -rx "rpt set variable $node WX=$wx LASTUPDATE=$time_val" 2>&1); then
-        echo "Updated Variables Node $node using rpt set variable"
-    else
-        echo "Error setting variables for node $node: $out"
-        status=1
-    fi
-    if out=$("$ASTERISK" -rx "rpt set variable $node ALERT=$alert" 2>&1); then
-        echo "Updated ALERT Node $node using rpt set variable"
-    else
-        echo "Error setting ALERT for node $node: $out"
-        status=1
-    fi
+    # One assignment per -rx call so each stays under the 512-byte netconsole limit.
+    set_node_var "$node" "WX=$wx" "WX" || status=1
+    set_node_var "$node" "LASTUPDATE=$time_val" "LASTUPDATE" || status=1
+    set_node_var "$node" "ALERT=$alert" "ALERT" || status=1
     return "$status"
 }
 
@@ -185,8 +237,9 @@ if [ -z "$NODES" ]; then
     exit 0
 fi
 
+status=0
 for node in $NODES; do
-    update_node_variables "$node" "$WX" "$ALERT" "$TIME_VAL"
+    update_node_variables "$node" "$WX" "$ALERT" "$TIME_VAL" || status=1
 done
 
-exit 0
+exit "$status"

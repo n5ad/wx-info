@@ -1,9 +1,37 @@
 #!/bin/bash
 #
 # wx-info.sh
-# created by N5AD, October 2026
-# inspired by previous styles that I have seen but do not know who to credit
-
+#
+# Derived from Supermon2 ast_var_update.sh (renamed/adapted as wx-info.sh)
+#
+#  (C) WA3DSP 12/15/2020
+#  Original concept
+#
+#  Updated 12/19/2020
+#   Name changed to ast_var_update.sh
+#   Added Weather, Alerts, and Log file size
+#
+#  Update 1/2/2021
+#   Added Registrations to node info
+#
+#  Update 1/9/2021
+#     Name changed to ast_var_update.sh
+#     Added node_info.ini file
+#
+#  Update 1/16/2021
+#     Added check for Hamvoip updates
+#
+#  Update 3 - 2/6/2021
+#     Corrected log size wording
+#     added clickable URL to WX Alert
+#     Fixed CPU temperature for later kernels
+#
+# Copyright (c) 2025 W5GLE
+# ASL3 port (included in supermon-ng as ast_node_status_update)
+#
+# Copyright (c) 2026 N5AD
+# Adapted/renamed as wx-info.sh for this branch by N5AD, October 2026
+#
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/wx-info.ini"
 ASTERISK=/usr/sbin/asterisk
